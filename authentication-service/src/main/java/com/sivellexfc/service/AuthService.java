@@ -3,15 +3,22 @@ package com.sivellexfc.service;
 
 import com.sivellexfc.model.UserCredential;
 import com.sivellexfc.repository.UserCredentialRepository;
+import io.jsonwebtoken.JwtException;
+import org.apache.catalina.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.GrantedAuthority;
+
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class AuthService {
 
     @Autowired
     private UserCredentialRepository repository;
+
     @Autowired
     private PasswordEncoder passwordEncoder;
 
@@ -24,14 +31,36 @@ public class AuthService {
         return "user added to the system";
     }
 
+    public String getUserIdByUsername(String username){
+        Optional<UserCredential> userCredential = repository.findByUsername(username);
+        if (userCredential.isPresent()){
+            String userId = String.valueOf(userCredential.get().getId());
+            return userId;
+        }
+        return "";
+    }
+
     public String generateToken(String username) {
-        return jwtService.generateToken(username);
+        Optional<UserCredential> userCredential = repository.findByUsername(username);
+        if (userCredential.isPresent()){
+            return jwtService.generateToken(username,(List<GrantedAuthority>) userCredential.get().getAuthorities());
+        };
+        return null;
     }
 
-    public void validateToken(String token) {
-        jwtService.validateToken(token);
+    public boolean validateToken(String token) {
+        if(!jwtService.validateToken(token)) {
+            throw new JwtException("token dogrulanamadi");
+        };
+        return true;
     }
 
+    public String getUserIdByToken(String authHeader){
+        System.out.println("claims  : " + jwtService.extractAllClaims(authHeader));
+        System.out.println("claims getSubject() : " + jwtService.extractAllClaims(authHeader).getSubject());
+        System.out.println("id : "+jwtService.extractAllClaims(authHeader).get("id",String.class));
+        return jwtService.extractAllClaims(authHeader).get("accountId",String.class);
+    }
 
 }
 

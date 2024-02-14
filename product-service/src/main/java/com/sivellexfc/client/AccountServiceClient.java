@@ -27,6 +27,9 @@ public interface AccountServiceClient {
     @GetMapping("/store")
     String getStoreIdByAccountId(@RequestParam(name = "accountId") String accountId);
 
+    @GetMapping("/getUserIdByAuthHeader")
+    String getAccountId(@RequestParam("authHeader") String authHeader);
+
     @GetMapping("/deneme")
     String denemeAc();
 }

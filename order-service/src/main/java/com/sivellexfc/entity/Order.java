@@ -14,5 +14,4 @@ public class Order{
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private long id;
 
-
 }

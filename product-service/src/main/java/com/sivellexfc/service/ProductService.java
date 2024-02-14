@@ -36,30 +36,11 @@ public class ProductService {
 
     @Transactional
     public ResponseEntity<Product> createProduct(RequestProductDto requestProductDto, String accountId) {
-        try {
-            if (accountServiceClient.isAccountExist(accountId)) {
-                if(accountServiceClient.isAccountSeller(accountId)){
-                    requestProductDto.setSellerId(accountId);
-                    Product product = ProductWrapper.toEntity(requestProductDto);
-                    String productId = productRepository.save(product).getId();
-                    System.out.println(productId);
-                    System.out.println("ProductId : " + productId);
-                    System.out.println("StoreId : " + accountServiceClient.getStoreIdByAccountId(accountId));
-                    storeServiceClient.addProduct(productId,accountServiceClient.getStoreIdByAccountId(accountId));
-                    return ResponseEntity.ok(productRepository.save(product));
-                }
-                else throw new AccessDeniedException("Satıcı değil");
-            } else {
-                throw new AccountNotFoundException();
-            }
-        } catch (AccountNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        } catch (AccessDeniedException e){
-            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(null);
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
+        requestProductDto.setSellerId(accountId);
+        Product product = ProductWrapper.toEntity(requestProductDto);
+        String productId = productRepository.save(product).getId();
+        storeServiceClient.addProduct(productId,accountServiceClient.getStoreIdByAccountId(accountId));
+        return ResponseEntity.ok(productRepository.save(product));
     }
 
 

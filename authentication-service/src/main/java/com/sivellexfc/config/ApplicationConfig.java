@@ -32,11 +32,7 @@ public class ApplicationConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorizationManagerRequestMatcherRegistry -> authorizationManagerRequestMatcherRegistry
-                        .requestMatchers("/auth/register")
-                        .permitAll()
-                        .requestMatchers("/auth/token")
-                        .permitAll()
-                        .requestMatchers("/auth/validate")
+                        .requestMatchers("/auth/**")
                         .permitAll()
                         .requestMatchers("/test")
                         .permitAll()

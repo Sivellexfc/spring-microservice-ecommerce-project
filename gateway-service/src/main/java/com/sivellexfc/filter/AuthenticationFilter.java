@@ -1,24 +1,36 @@
 package com.sivellexfc.filter;
 
+import com.sivellexfc.client.AuthenticationServiceClient;
 import com.sivellexfc.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.stereotype.Component;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Component
 public class AuthenticationFilter extends AbstractGatewayFilterFactory<AuthenticationFilter.Config> {
 
     private final RouteValidator validator;
-    private final JwtUtil jwtUtil;
+    private AuthenticationServiceClient authenticationClient;
+    private final RestTemplate template;
 
-    public AuthenticationFilter(RouteValidator validator, JwtUtil jwtUtil) {
+    public AuthenticationFilter(RouteValidator validator, JwtUtil jwtUtil,RestTemplate template) {
         super(Config.class);
-        System.out.println("auth filter");
         this.validator = validator;
-        this.jwtUtil = jwtUtil;
+        this.template = template;
+        //this.jwtUtil = jwtUtil;
+    }
+    @Autowired
+    public void setAuthenticationClient(AuthenticationServiceClient authenticationServiceClient){
+        this.authenticationClient = authenticationServiceClient;
     }
 
     @Override
@@ -30,15 +42,50 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                 }
 
                 String authHeader = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION).get(0);
+
+                System.out.println(exchange.getAttributes() + "\n");
+                exchange.getAttributes().put("accountId","2222");
+                System.out.println(exchange.getAttributes());
+
+
                 if (authHeader != null && authHeader.startsWith("Bearer ")) {
                     authHeader = authHeader.substring(7);
+
+                    ResponseEntity<String[]> response = template.
+                            getForEntity("http://localhost:9898/auth/get-roles?authHeader=" + authHeader, String[].class);
+
+                    if (response.getStatusCode().is2xxSuccessful()) {
+
+                        String[] rolesArray = response.getBody();
+                            assert rolesArray != null;
+                            List<String> rolesList = Arrays.asList(rolesArray);
+                        System.out.println("Roles list" + rolesList);
+
+                        if (rolesList.contains("SELLER")) {
+                            if (!exchange.getRequest().getURI().getPath().contains("store") &&
+                                    !exchange.getRequest().getURI().getPath().contains("customer") &&
+                                        !exchange.getRequest().getURI().getPath().contains("order") &&
+                                            !exchange.getRequest().getURI().getPath().contains("product")) {
+
+                                throw new RuntimeException("unauthorized access as SELLER");
+                            }
+                        }
+
+                        if (rolesList.contains("CUSTOMER")) {
+                            if (!exchange.getRequest().getURI().getPath().contains("customer")) {
+                                throw new RuntimeException("unauthorized access as CUSTOMER");
+                            }
+                        }
+
+                    }
+                    else {
+                        System.out.println("hatalı bir dönüş");
+                    }
                 }
                 try {
-                    System.out.println(authHeader);
-                    jwtUtil.validateToken(authHeader);
-
+                    String responseValidate =  template.getForObject("http://localhost:9898/auth/validate?token=" + authHeader, String.class);
+                    System.out.println("responseValidate :" + responseValidate);
                 } catch (Exception e) {
-                    System.out.println("invalid access...!");
                     throw new RuntimeException("un authorized access to application");
                 }
             }

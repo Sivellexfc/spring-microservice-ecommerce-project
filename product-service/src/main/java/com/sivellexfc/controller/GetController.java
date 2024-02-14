@@ -38,13 +38,9 @@ public class GetController {
         else return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
     }
 
-    @GetMapping("/test")
+    @GetMapping("/get/test")
     public String deneme(){
         return "test message";
     }
 
-//    @GetMapping("/deneme")
-//    public String deneme(){
-//        return accountServiceClient.denemeAc();
-//    }
 }

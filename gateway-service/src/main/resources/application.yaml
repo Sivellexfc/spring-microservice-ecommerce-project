@@ -32,6 +32,8 @@ spring:
           uri: lb://PRODUCT-SERVICE
           predicates:
             - Path=/api/product/**
+          filters:
+            - AuthenticationFilter
 
         - id: authentication-service
           uri: lb://AUTHENTICATION-SERVICE
@@ -46,6 +48,8 @@ spring:
     name: gateway-service
   main:
     web-application-type: reactive
+    allow-circular-references: true
+
 eureka:
   client:
     serviceUrl:
